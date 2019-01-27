@@ -39,6 +39,10 @@ namespace BrentBott
 
         Random rand;
 
+        public static bool proAnime = false;
+
+        public static string[] animeArr = {"kawai", "entai", "nimay", "nime", "maid", "sugoi", "angel cafe", "angelcafe", "uncle tetsu", "kpop", "k-pop", "j-pop", "n i m e", "e n t a i","n.i.m.e"};
+
         private static bool playingSong = false;
 
         string[] coinflip;
@@ -69,6 +73,34 @@ namespace BrentBott
                 x.HelpMode = HelpMode.Public;
             });
 
+            discord.MessageReceived += async (s, e) =>
+            {
+                if (proAnime == true && !e.Message.IsAuthor)
+                {
+                    Message[] msg;
+                    msg = await e.Channel.DownloadMessages(1);
+                    string check = msg[0].ToString();
+                    //await e.Channel.SendMessage(check);
+                    for (int i = 0; i < animeArr.Length; i++)
+                    {
+                        if (check.ToLower().Contains(animeArr[i]))
+                        {
+                            Message[] messagesToDelete;
+                            messagesToDelete = await e.Channel.DownloadMessages(1);
+                            await e.Channel.DeleteMessages(messagesToDelete);
+                        }
+                    }
+                }
+            };
+
+            discord.UserJoined += async (s, e) =>
+            {
+                var serverJoined = e.Server.FindChannels("#general").FirstOrDefault();
+                //var serverRole = e.Server.FindRoles("rapta nigga").FirstOrDefault();
+                //await e.User.AddRoles(serverRole);
+                await serverJoined.SendMessage("Welcome to the Comp Sci Gang " + e.User.Mention + "! Be sure to ask " + e.Server.GetUser(118698190852587520).Mention + " to add any tags that apply to you!");
+            };
+
             var _vClient = discord.GetService<AudioService>();
 
             commands = discord.GetService<CommandService>();
@@ -76,6 +108,8 @@ namespace BrentBott
             /*this is where you declare/register the functions you wish to have as commands in the discord chat.*/
 
             cflip();
+
+            regAnime();
 
             regPurge();
 
@@ -105,12 +139,67 @@ namespace BrentBott
 
             regBless();
 
+            regDot();
+
+            regCross();
+
             //this is what connect the bot to all the servers it is included in. these servers can be seen on the bot's Discord Developers page.
             discord.ExecuteAndWait(async () =>
             {
                 await discord.Connect("MjM0NzI2MDE5ODg0NTE1MzMx.CtwVcA.qAFD2GzUsQHic41BlJCpwApsqXE", TokenType.Bot);
+                Game g = new Game("with Ayana | ~help");
+                discord.SetGame(g);
             });
 
+        }
+
+        private void regDot()
+        {
+            commands.CreateCommand("dot")
+                .Parameter("point", ParameterType.Unparsed)
+                .Do(async (e) => 
+                {
+                    string[] points;
+                    string[] point1;
+                    string[] point2;
+                    int result = 0;
+                    points = $"{e.GetArg("point")}".Split(' ');
+                    point1 = points[0].Split(',');
+                    point2 = points[1].Split(',');
+                    for (int i = 0; i < point1.Length; i++)
+                    {
+                        result += Convert.ToInt32(point1[i]) * Convert.ToInt32(point2[i]);
+                    }
+                    await e.Channel.SendMessage($"The dot product of the given points is: {result}");
+                    result = 0;
+                });
+        }
+
+        private void regCross()
+        {
+            commands.CreateCommand("cross")
+                .Parameter("point", ParameterType.Unparsed)
+                .Do(async (e) =>
+                {
+                    string[] points;
+                    string[] point1;
+                    string[] point2;
+                    int downProd;
+                    int upProd;
+                    int[] result = {0,0,0};
+                    points = $"{e.GetArg("point")}".Split(' ');
+                    point1 = points[0].Split(',');
+                    point2 = points[1].Split(',');
+                    string[] arr1 = {point1[1], point1[2], point1[0], point1[1]};
+                    string[] arr2 = {point2[1], point2[2], point2[0], point2[1]};
+                    for (int i = 0; i < 3; i++)
+                    {
+                        downProd = Convert.ToInt32(arr1[i]) * Convert.ToInt32(arr2[i + 1]);
+                        upProd = Convert.ToInt32(arr2[i]) * Convert.ToInt32(arr1[i + 1]);
+                        result[i] = downProd - upProd;
+                    }
+                    await e.Channel.SendMessage($"The cross product of the given points is: ({result[0]},{result[1]},{result[2]})");
+                });
         }
 
         /*this function is a simple 50/50 coinflip using a random ranging 0 to 1. The 0th element in the coinflip string
@@ -125,6 +214,27 @@ namespace BrentBott
                 });
         }
 
+        private void regAnime()
+        {
+            commands.CreateCommand("protocol ANIME")
+                .Do(async (e) =>
+                {
+                    string userrole = Convert.ToString(e.User.Id);
+                    if (userrole == "109060557016965120")
+                    {
+                        proAnime = !(proAnime);
+                        if (proAnime == true)
+                        {
+                            await e.Channel.SendMessage("Protocol ANM is now in effect.");
+                        }
+                        else
+                        {
+                            await e.Channel.SendMessage("Protocol ANM has been lifted.");
+                        }
+                    }
+                });
+        }
+
         /*this function deletes messages in the Discord chat equal to the number in the given parameter (can't exceed
          * 100) the function downloads the amount of messages equal to the given parameter, then proceeds to remove those
          * messages from the chat room.*/
@@ -136,7 +246,7 @@ namespace BrentBott
                 {
                     string userrole = Convert.ToString(e.User.Id);
                     var numDel = $"{e.GetArg("num")}";
-                    if (userrole == "109060557016965120" && Convert.ToInt32(numDel) <= 100 && Convert.ToInt32(numDel) > 0)
+                    if ((userrole == "109060557016965120" || userrole == "118698190852587520" || userrole == "160501860694753281") && Convert.ToInt32(numDel) <= 100 && Convert.ToInt32(numDel) > 0)
                     {
                         Message[] messagesToDelete;
                         messagesToDelete = await e.Channel.DownloadMessages(Convert.ToInt32(numDel));
@@ -175,6 +285,9 @@ namespace BrentBott
             .Parameter("msg", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {
+                    Message[] messagesToDelete;
+                    messagesToDelete = await e.Channel.DownloadMessages(1);
+                    await e.Channel.DeleteMessages(messagesToDelete);
                     var sayThis = $"{ e.GetArg("msg") }";
                     await e.Channel.SendMessage(sayThis);
                 });
@@ -218,8 +331,7 @@ namespace BrentBott
                 {
                     if (Convert.ToString(e.User.Id) == "109060557016965120")
                     {
-                        var aClient = await discord.GetService<AudioService>()
-                    .Join(e.User.VoiceChannel);
+                        var aClient = await discord.GetService<AudioService>().Join(e.User.VoiceChannel);
                     }
                 });
         }
@@ -288,6 +400,7 @@ namespace BrentBott
                 .Parameter("search", ParameterType.Unparsed)
                 .Do(async (e) =>
                 {
+                    var serverJoined = e.Server.FindChannels("#bot-channel").FirstOrDefault();
                     var searchThis = $"{ e.GetArg("search")}";
                     var web = new HtmlWeb();
                     var site = web.Load("https://www.google.ca/search?q=" + searchThis + "&rlz=1C1CHBF_enCA698CA698&biw=1300&bih=1014&tbm=isch&source=lnms&sa=X&ved=0ahUKEwiKhd-gwIPQAhXk6oMKHWeLByYQ_AUIBygC#tbm=isch&q=" + searchThis);
@@ -298,11 +411,11 @@ namespace BrentBott
                             string say = rank.InnerHtml;
                             string say2 = say.Remove(0, say.IndexOf("https"));
                             string say3 = say2.Substring(0, say2.IndexOf('"'));
-                            await e.Channel.SendMessage(say3);
+                            await serverJoined.SendMessage(say3);
                         }
                         else
                         {
-                            await e.Channel.SendMessage("nothing found my dude");
+                            await serverJoined.SendMessage("nothing found my dude");
                         }
 
                 });
@@ -387,18 +500,19 @@ namespace BrentBott
                 .Parameter("money", ParameterType.Unparsed)
                 .Do(async (e) => 
                 {
+                    var serverJoined = e.Server.FindChannels("#bot-channel").FirstOrDefault();
                     Random rand = new Random();
-                    int bet = 0;
-                    int cash = 0;
+                    long bet = 0;
+                    long cash = 0;
                     string[] arr = Properties.Settings.Default.users;
                     var index = Array.FindIndex(arr, row => row.Contains(e.User.Name));
                     if (index >= 0)
                     {
                         string finalcut = arr[index].Remove(0, e.User.Name.Length);
-                        cash = Convert.ToInt32(finalcut);
-                        bet = Convert.ToInt32($"{e.GetArg("money")}");
+                        cash = Convert.ToInt64(finalcut);
+                        bet = Convert.ToInt64($"{e.GetArg("money")}");
                     }
-                    var pics = new[] { "<:ahh:231188075601068032>", "<:lmao:235625469490364416>", "<:triggered:238851285326102528>" };
+                    var pics = new[] { "<:feelsbadman:360207828952285184>", "<:feelsgoodman:364929208792907776>", "<:feelsspecialman:369649184854245381>" };
                     var say1 = pics[rand.Next(pics.Length)];
                     var say2 = pics[rand.Next(pics.Length)];
                     var say3 = pics[rand.Next(pics.Length)];
@@ -411,9 +525,17 @@ namespace BrentBott
                             { 
                             bet *= 3;
                             cash += bet;
-                            arr[index] = e.User.Name + " " + cash.ToString();
-                            Properties.Settings.Default.Save();
-                            await e.Channel.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```WINNER! KENYO MY DUDE! " + bet.ToString() + " won!```" + e.User.Mention + " Current cash: " + cash);
+                                if (cash == 0)
+                                {
+                                    arr[index] = e.User.Name + " 1";
+                                    cash = 1;
+                                }
+                                else
+                                {
+                                    arr[index] = e.User.Name + " " + cash.ToString();
+                                }
+                                Properties.Settings.Default.Save();
+                            await serverJoined.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```WINNER! WINNER! WINNER!" + bet.ToString("C0") + " won!```" + e.User.Mention + " Current cash: " + cash.ToString("C0"));
                         }
                         }
                         }
@@ -426,9 +548,17 @@ namespace BrentBott
                             {
                                 bet *= 2;
                                 cash += bet;
-                                arr[index] = e.User.Name + " " + cash.ToString();
+                                if (cash == 0)
+                                {
+                                    arr[index] = e.User.Name + " 1";
+                                    cash = 1;
+                                }
+                                else
+                                {
+                                    arr[index] = e.User.Name + " " + cash.ToString();
+                                }
                                 Properties.Settings.Default.Save();
-                                await e.Channel.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Pair my dude! " + bet.ToString() + " won!```" + e.User.Mention + " Current cash: " + cash);
+                                await serverJoined.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Pair my dude! " + bet.ToString("C0") + " won!```" + e.User.Mention + " Current cash: " + cash.ToString("C0"));
                             }
                             }
                         }
@@ -441,9 +571,17 @@ namespace BrentBott
                             {
                                 bet *= 1;
                                 cash += bet;
-                                arr[index] = e.User.Name + " " + cash.ToString();
+                                if (cash == 0)
+                                {
+                                    arr[index] = e.User.Name + " 1";
+                                    cash = 1;
+                                }
+                                else
+                                {
+                                    arr[index] = e.User.Name + " " + cash.ToString();
+                                }
                                 Properties.Settings.Default.Save();
-                                await e.Channel.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Double my dude! Returned bet!```" + e.User.Mention + " Current cash: " + cash);
+                                await serverJoined.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Double my dude! Returned bet!```" + e.User.Mention + " Current cash: " + cash.ToString("C0"));
 
                             }
                             }
@@ -457,9 +595,17 @@ namespace BrentBott
                             {
                                 bet *= 0;
                                 cash += bet;
-                                arr[index] = e.User.Name + " " + cash.ToString();
+                                if (cash == 0)
+                                {
+                                    arr[index] = e.User.Name + " 1";
+                                    cash = 1;
+                                }
+                                else
+                                {
+                                    arr[index] = e.User.Name + " " + cash.ToString();
+                                }
                                 Properties.Settings.Default.Save();
-                                await e.Channel.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Nice try my dude. " + bet.ToString() + " won!```" + e.User.Mention + " Current cash: " + cash);
+                                await serverJoined.SendMessage("------------------" + System.Environment.NewLine + "||" + say1 + "|" + say2 + "|" + say3 + "||" + System.Environment.NewLine + "------------------" + System.Environment.NewLine + "```Nice try my dude. " + bet.ToString("C0") + " won!```" + e.User.Mention + " Current cash: " + cash.ToString("C0"));
                             }
                             }
                         }
@@ -476,6 +622,7 @@ namespace BrentBott
             commands.CreateCommand("register")
                 .Do(async (e) => 
                 {
+                    var serverJoined = e.Server.FindChannels("#bot-channel").FirstOrDefault();
                     int x = 0;
                     bool indexOpen = false;
                     while (indexOpen != true)
@@ -484,6 +631,7 @@ namespace BrentBott
                         {
                             Properties.Settings.Default.users[x] = e.User.Name.ToString() + " " + "5000";
                             Properties.Settings.Default.Save();
+                            await serverJoined.SendMessage(e.User.Mention + " has been registered my dude.");
                             indexOpen = true;
                         }
                         else
@@ -492,7 +640,6 @@ namespace BrentBott
                         }
                     }
                     x = 0;
-                    await e.Channel.SendMessage(e.User.Mention + " has been registered my dude.");
                 });
         }
 
@@ -505,17 +652,17 @@ namespace BrentBott
             commands.CreateCommand("profile")
                 .Do(async (e) =>
                 {
-
+                    var serverJoined = e.Server.FindChannels("#bot-channel").FirstOrDefault();
                     string[] arr = Properties.Settings.Default.users;
                     var index = Array.FindIndex(arr, row => row.Contains(e.User.Name));
                     if (index >= 0)
                     {
                         string finalcut = arr[index].Remove(0, e.User.Name.Length);
-                        await e.Channel.SendMessage(finalcut);
+                        await serverJoined.SendMessage(e.User.Mention + ": " + (Convert.ToInt64(finalcut)).ToString("C0"));
                     }
                     else
                     {
-                        await e.Channel.SendMessage("User not found. Use ~register my dude!");
+                        await serverJoined.SendMessage("User not found. Use ~register my dude!");
                     }
                 });
         }
@@ -622,7 +769,6 @@ namespace BrentBott
             }
             await vClient.Disconnect();
         }
-            
 
         private void Log(object sender, LogMessageEventArgs e)
         {
